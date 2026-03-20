@@ -1,24 +1,26 @@
 import os
-from langchain_community.vectorstores import Chroma
+from langchain_postgres.vectorstores import PGVector
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 
-CHROMA_PATH = "./chroma_db"
+CONNECTION_STRING = os.getenv(
+    "POSTGRES_CONNECTION_STRING",
+    "postgresql+psycopg://rag_user:rag_password@db:5432/rag_db",  # 'db' = docker-compose service name
+)
+COLLECTION_NAME = "rag_docs"
 
 
 def build_rag_chain():
-    # Verify ChromaDB exists
-    if not os.path.exists(CHROMA_PATH):
-        raise RuntimeError("ChromaDB not found! Run ingest.py first:\npython ingest.py")
-
-    print("Loading existing ChromaDB...")
-    vectorstore = Chroma(
-        persist_directory=CHROMA_PATH,
-        embedding_function=OpenAIEmbeddings(),
+    print("Connecting to pgvector...")
+    vectorstore = PGVector(
+        embeddings=OpenAIEmbeddings(),
+        collection_name=COLLECTION_NAME,
+        connection=CONNECTION_STRING,
+        async_mode=False,
     )
-    print(f"Loaded {vectorstore._collection.count()} vectors from ChromaDB")
+    print("Connected to pgvector successfully!")
 
     retriever = vectorstore.as_retriever()
 

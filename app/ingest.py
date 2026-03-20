@@ -29,7 +29,8 @@ def ingest():
     print(f"Loaded {len(docs)} documents")
 
     print("Splitting documents...")
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)
+
     splits = text_splitter.split_documents(docs)
     print(f"Created {len(splits)} chunks")
 
@@ -40,8 +41,12 @@ def ingest():
     # Create local persistent client
     client = QdrantClient(url="http://localhost:6333")
 
+    # Check if collection already exists
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME)
+
     # Create collection
-    client.recreate_collection(
+    client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(
             size=1536,  # OpenAI text-embedding-ada-002 dimension

@@ -29,7 +29,7 @@ def ingest():
     print(f"Loaded {len(docs)} documents")
 
     print("Splitting documents...")
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=50)
 
     splits = text_splitter.split_documents(docs)
     print(f"Created {len(splits)} chunks")

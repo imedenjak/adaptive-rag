@@ -1,0 +1,20 @@
+[project]
+name = "adaptive-rag"
+version = "0.1.0"
+dependencies = [
+    "langchain",
+    "langchain-community",
+    "langchain-openai",
+    "langchain-qdrant",
+    "langchain-text-splitters",
+    "langgraph",
+    "langsmith",
+    "qdrant-client",
+    "tiktoken",
+    "python-dotenv",
+    "pydantic",
+    "beautifulsoup4",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]

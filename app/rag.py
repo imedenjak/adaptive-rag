@@ -7,7 +7,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from qdrant_client import QdrantClient
 
 from langchain_core.load import dumps, loads
-from config import (
+from .config import (
     COLLECTION_NAME,
     OPENAI_EMBEDDING_MODEL,
     OPENAI_QUERY_MODEL,

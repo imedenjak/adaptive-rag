@@ -6,6 +6,7 @@ langchain-ollama
 langchain-qdrant
 langchain-text-splitters
 langgraph
+langsmith
 qdrant-client
 tiktoken
 python-dotenv

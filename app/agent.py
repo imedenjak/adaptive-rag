@@ -4,8 +4,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
-from config import OPENAI_CHAT_MODEL
-from rag import build_retrieval_chain
+from .config import OPENAI_CHAT_MODEL
+from .rag import build_retrieval_chain
 
 
 # ------------------------- State ---------------------------------------------------------------------------

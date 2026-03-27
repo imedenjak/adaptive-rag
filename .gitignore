@@ -39,6 +39,9 @@ app/qdrant_db/
 qdrant_db/
 chroma_db/
 
+# LangGraph
+.langgraph_api/
+
 # IDE
 .vscode/
 .idea/
@@ -55,9 +58,6 @@ desktop.ini
 # Logs
 *.log
 logs/
-
-# Docker
-.dockerignore
 
 # Testing
 .pytest_cache/

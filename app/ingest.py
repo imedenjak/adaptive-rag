@@ -9,12 +9,20 @@ from langchain_openai import OpenAIEmbeddings
 # from langchain_ollama import OllamaEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
-from config import (
-    COLLECTION_NAME,
-    OPENAI_EMBEDDING_MODEL,
-    QDRANT_URL,
-    get_embedding_dimensions,
-)
+try:
+    from .config import (
+        COLLECTION_NAME,
+        OPENAI_EMBEDDING_MODEL,
+        QDRANT_URL,
+        get_embedding_dimensions,
+    )
+except ImportError:
+    from config import (  # noqa: E402 — fallback when run as a script
+        COLLECTION_NAME,
+        OPENAI_EMBEDDING_MODEL,
+        QDRANT_URL,
+        get_embedding_dimensions,
+    )
 
 load_dotenv()
 
@@ -69,4 +77,6 @@ def ingest():
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
     ingest()

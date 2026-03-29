@@ -1,5 +1,10 @@
 import os
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+# "dev" → colored human-readable console output (local development)
+# "json" → JSON lines to stdout (production / log aggregators)
+LOG_FORMAT = os.getenv("LOG_FORMAT", "dev")
+
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "rag_docs")
 

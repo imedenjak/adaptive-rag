@@ -4,8 +4,12 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
+import structlog
+
 from .config import OPENAI_CHAT_MODEL
 from .rag import build_retrieval_chain
+
+logger = structlog.get_logger(__name__)
 
 
 # ------------------------- State ---------------------------------------------------------------------------
@@ -29,17 +33,18 @@ retrieval_chain = build_retrieval_chain()
 # ------------------------- Nodes ---------------------------------------------------------------------------
 def retriever_node(state: AgentState) -> AgentState:
     """Retrieve relevant documents using your existing RAG + rank fusion"""
-    print("--- RETRIEVING ---")
     question = state.get("rewritten_question") or state["question"]
+    logger.info("retrieve.start", question=question)
     # reciprocal_rank_fusion returns (doc, score) tuples — extract docs only
     results = retrieval_chain.invoke({"question": question})
     documents = [doc for doc, score in results[:5]]
+    logger.info("retrieve.done", doc_count=len(documents))
     return {"documents": documents}
 
 
 def generate_node(state: AgentState) -> AgentState:
     """Generate answer from retrieved documents"""
-    print("--- GENERATING ---")
+    logger.info("generate.start")
     question = state["question"]
     documents = state["documents"]
 
@@ -56,13 +61,12 @@ Question: {question}
 
     chain = prompt | llm | StrOutputParser()
     answer = chain.invoke({"context": context, "question": question})
+    logger.info("generate.done", answer_chars=len(answer))
     return {"answer": answer}
 
 
 def rewrite_question_node(state: AgentState) -> AgentState:
     """Rewrite the question to improve retrieval on retry."""
-    print("--- REWRITING QUESTION ---")
-
     question = state["question"]
     answer = state["answer"]
     documents = state["documents"]
@@ -83,13 +87,17 @@ Retrieved context: {context}
     rewritten_question = chain.invoke(
         {"question": question, "answer": answer, "context": context}
     ).strip()
+    logger.info(
+        "rewrite.done",
+        retry_count=retry_count,
+        original_question=question,
+        rewritten_question=rewritten_question,
+    )
     return {"rewritten_question": rewritten_question, "retry_count": retry_count}
 
 
 def grade_answer_node(state: AgentState) -> AgentState:
     """Check if answer is grounded in documents — no hallucination"""
-    print("--- GRADING ANSWER ---")
-
     documents = state["documents"]
     answer = state["answer"]
 
@@ -108,12 +116,13 @@ Is the answer grounded in the context? (yes/no):
     chain = prompt | llm | StrOutputParser()
     result = chain.invoke({"context": context, "answer": answer})
     is_grounded = result.strip().lower() == "yes"
+    logger.info("grade.done", is_grounded=is_grounded)
     return {"is_grounded": is_grounded}
 
 
 def fallback_node(state: AgentState) -> AgentState:
     """Return a safe answer when grounded retrieval fails repeatedly."""
-    print("--- FALLBACK ANSWER ---")
+    logger.warning("fallback.triggered", retry_count=state.get("retry_count", 0))
     return {
         "answer": (
             "I couldn't produce a grounded answer from the retrieved context. "
@@ -126,14 +135,14 @@ def fallback_node(state: AgentState) -> AgentState:
 def should_retry(state: AgentState) -> str:
     """Decide whether to retry generation or finish"""
     if state["is_grounded"]:
-        print("--- ANSWER GROUNDED, FINISHING ---")
+        logger.info("route.end", reason="grounded")
         return "end"
 
     if state.get("retry_count", 0) < state.get("max_retries", 1):
-        print("--- ANSWER NOT GROUNDED, REWRITING AND RETRIEVING AGAIN ---")
+        logger.info("route.rewrite", reason="not_grounded", retry_count=state.get("retry_count", 0))
         return "rewrite_question"
 
-    print("--- ANSWER NOT GROUNDED, RETURNING FALLBACK ---")
+    logger.warning("route.fallback", reason="max_retries_reached", retry_count=state.get("retry_count", 0))
     return "fallback"
 
 

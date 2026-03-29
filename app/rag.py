@@ -1,3 +1,4 @@
+import structlog
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -13,6 +14,8 @@ from .config import (
     OPENAI_QUERY_MODEL,
     QDRANT_URL,
 )
+
+logger = structlog.get_logger(__name__)
 
 
 def get_unique_union(documents: list[list]):
@@ -58,7 +61,7 @@ def reciprocal_rank_fusion(results: list[list], k=60):
 
 def build_retrieval_chain():
     """Returns just the retrieval chain for agent use"""
-
+    logger.info("retrieval_chain.build", qdrant_url=QDRANT_URL, collection=COLLECTION_NAME)
     client = QdrantClient(url=QDRANT_URL)
     embeddings = OpenAIEmbeddings(model=OPENAI_EMBEDDING_MODEL)
 

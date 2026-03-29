@@ -12,3 +12,4 @@ tiktoken
 python-dotenv
 pydantic
 beautifulsoup4
+structlog

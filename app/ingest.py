@@ -78,7 +78,6 @@ def ingest(urls: list[str]) -> None:
         embedding=embeddings,
     )
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-        model=OPENAI_EMBEDDING_MODEL,
         chunk_size=400,  # 400 tokens, not characters
         chunk_overlap=50,
     )

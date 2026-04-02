@@ -11,7 +11,7 @@ services:
     build: .
     container_name: rag-streamlit
     ports:
-      - "8501:8501"        # ← Streamlit port
+      - "8501:8501" # ← Streamlit port
     env_file:
       - .env
     environment:
@@ -19,3 +19,8 @@ services:
     depends_on:
       - qdrant
     restart: on-failure
+    volumes:
+      - chat_data:/data
+
+volumes:
+  chat_data:

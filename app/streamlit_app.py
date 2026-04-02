@@ -26,11 +26,14 @@ def get_agent():
     logger.info("agent.build")
     return build_graph()
 
+
 agent = get_agent()
 
 # Chat history
+from app.chat_history import load_history, save_message
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = load_history()
 
 # Display chat history
 for msg in st.session_state.messages:
@@ -54,7 +57,12 @@ if question := st.chat_input("Ask a question..."):
             t0 = time.perf_counter()
 
             result = agent.invoke(
-                {"question": question, "rewritten_question": "", "retry_count": 0, "max_retries": 1}
+                {
+                    "question": question,
+                    "rewritten_question": "",
+                    "retry_count": 0,
+                    "max_retries": 1,
+                }
             )
 
             elapsed_ms = round((time.perf_counter() - t0) * 1000)
@@ -82,3 +90,5 @@ if question := st.chat_input("Ask a question..."):
                         st.write(chunk[:400] + ("..." if len(chunk) > 400 else ""))
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
+    save_message("user", question)
+    save_message("assistant", answer)

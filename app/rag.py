@@ -18,16 +18,6 @@ from .config import (
 logger = structlog.get_logger(__name__)
 
 
-def get_unique_union(documents: list[list]):
-    """Unique union of retrieved docs"""
-    # Flatten list of lists, and convert each Document to string
-    flattened_docs = [dumps(doc) for sublist in documents for doc in sublist]
-    # Get unique documents
-    unique_docs = list(set(flattened_docs))
-    # Return
-    return [loads(doc) for doc in unique_docs]
-
-
 def reciprocal_rank_fusion(results: list[list], k=60):
     """Reciprocal_rank_fusion that takes multiple lists of ranked documents
     and an optional parameter k used in the RRF formula"""
@@ -61,7 +51,9 @@ def reciprocal_rank_fusion(results: list[list], k=60):
 
 def build_retrieval_chain():
     """Returns just the retrieval chain for agent use"""
-    logger.info("retrieval_chain.build", qdrant_url=QDRANT_URL, collection=COLLECTION_NAME)
+    logger.info(
+        "retrieval_chain.build", qdrant_url=QDRANT_URL, collection=COLLECTION_NAME
+    )
     client = QdrantClient(url=QDRANT_URL)
     embeddings = OpenAIEmbeddings(model=OPENAI_EMBEDDING_MODEL)
 

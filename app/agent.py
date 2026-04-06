@@ -4,6 +4,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 import structlog
 
 from .config import OPENAI_CHAT_MODEL
@@ -21,6 +22,7 @@ class AgentState(TypedDict):
     is_grounded: bool
     retry_count: int
     max_retries: int
+    chat_history: List[str]
 
 
 # ------------------------- LLM ---------------------------------------------------------------------------
@@ -47,20 +49,27 @@ def generate_node(state: AgentState) -> AgentState:
     logger.info("generate.start")
     question = state["question"]
     documents = state["documents"]
+    chat_history = state.get("chat_history") or []
 
     context = "\n\n".join(doc.page_content for doc in documents)
+    history_text = "\n".join(chat_history[-6:])     # last 3 turns (6 lines)
 
     prompt = ChatPromptTemplate.from_template("""
 Answer the following question based on this context.
 If the context is insufficient, say so clearly instead of making up facts.
 
+{history_section}Context:
 {context}
 
 Question: {question}
 """)
 
     chain = prompt | llm | StrOutputParser()
-    answer = chain.invoke({"context": context, "question": question})
+    answer = chain.invoke({
+        "context": context, 
+        "question": question,
+        "history_section": f"Conversation so far:\n{history_text}\n\n" if history_text else "",
+        })
     logger.info("generate.done", answer_chars=len(answer))
     return {"answer": answer}
 
@@ -139,10 +148,18 @@ def should_retry(state: AgentState) -> str:
         return "end"
 
     if state.get("retry_count", 0) < state.get("max_retries", 1):
-        logger.info("route.rewrite", reason="not_grounded", retry_count=state.get("retry_count", 0))
+        logger.info(
+            "route.rewrite",
+            reason="not_grounded",
+            retry_count=state.get("retry_count", 0),
+        )
         return "rewrite_question"
 
-    logger.warning("route.fallback", reason="max_retries_reached", retry_count=state.get("retry_count", 0))
+    logger.warning(
+        "route.fallback",
+        reason="max_retries_reached",
+        retry_count=state.get("retry_count", 0),
+    )
     return "fallback"
 
 
@@ -175,4 +192,4 @@ def build_graph():
         },
     )
 
-    return workflow.compile()
+    return workflow.compile(checkpointer=MemorySaver())

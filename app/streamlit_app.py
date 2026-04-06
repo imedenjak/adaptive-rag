@@ -35,6 +35,9 @@ from app.chat_history import load_history, save_message
 if "messages" not in st.session_state:
     st.session_state.messages = load_history()
 
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = str(uuid.uuid4())
+
 # Display chat history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
@@ -43,6 +46,12 @@ for msg in st.session_state.messages:
 # Input
 if question := st.chat_input("Ask a question..."):
     query_id = str(uuid.uuid4())[:8]
+
+    # Build history before appending current question to avoid duplication
+    chat_history = [
+        f"{'Human' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
+        for m in st.session_state.messages
+    ]
 
     # Show user message
     st.session_state.messages.append({"role": "user", "content": question})
@@ -62,7 +71,9 @@ if question := st.chat_input("Ask a question..."):
                     "rewritten_question": "",
                     "retry_count": 0,
                     "max_retries": 1,
-                }
+                    "chat_history": chat_history,
+                },
+                config={"configurable":{"thread_id": st.session_state.thread_id}}
             )
 
             elapsed_ms = round((time.perf_counter() - t0) * 1000)

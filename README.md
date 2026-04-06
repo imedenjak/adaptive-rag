@@ -41,24 +41,81 @@ adaptive_rag/
 └── README.md
 ```
 
-## Agent Flow
+## Architecture
 
 ```
-User Question
-      ↓
-[retrieve]       multi-query generation + hybrid search (dense + sparse) + reciprocal rank fusion
-      ↓
-[generate]       answer from retrieved context
-      ↓
-[grade_answer]   is answer grounded in context?
-      ↓
- grounded? ──YES──► END
-     │
-     NO
-     └──► [rewrite_question] ──► [retrieve] ──► [generate]
-                                      ↓ (max retries exceeded)
-                                  [fallback]
+┌─────────────────────────────────────────────────────────────────────┐
+│                         INGESTION (run once)                        │
+│                                                                     │
+│  Source URLs                                                        │
+│      │                                                              │
+│      ▼                                                              │
+│  WebBaseLoader + BeautifulSoup  (fetch & parse HTML)                │
+│      │                                                              │
+│      ▼                                                              │
+│  RecursiveCharacterTextSplitter (400 tokens, 50 overlap)            │
+│      │                                                              │
+│      ├──► OpenAI text-embedding-3-small  → dense vectors (1536d)    │
+│      └──► FastEmbed BM25                 → sparse vectors           │
+│                          │                                          │
+│                          ▼                                          │
+│                   Qdrant Collection                                 │
+│              (hybrid index: dense + sparse)                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                      RETRIEVAL  (per query)                         │
+│                                                                     │
+│  User Question                                                      │
+│      │                                                              │
+│      ▼                                                              │
+│  Multi-Query Generation  (LLM generates 5 query variants)           │
+│      │                                                              │
+│      ▼  (for each variant)                                          │
+│  Hybrid Search in Qdrant  (dense cosine + BM25 sparse)              │
+│      │                                                              │
+│      ▼                                                              │
+│  Reciprocal Rank Fusion   (merge ranked lists → top 5 docs)         │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                    AGENT GRAPH  (LangGraph)                         │
+│                                                                     │
+│                       ┌──────────┐                                  │
+│                       │ retrieve │◄─────────────────┐               │
+│                       └────┬─────┘                  │               │
+│                            │                        │               │
+│                            ▼                        │               │
+│                       ┌──────────┐           ┌──────┴───────┐       │
+│                       │ generate │           │   rewrite_   │       │
+│                       └────┬─────┘           │   question   │       │
+│                            │                 └──────────────┘       │
+│                            ▼                        ▲               │
+│                     ┌────────────┐                  │               │
+│                     │   grade_   │  not grounded,   │               │
+│                     │   answer   │  retries left ───┘               │
+│                     └─────┬──────┘                                  │
+│                           │                                         │
+│              ┌────────────┼─────────────┐                           │
+│              │            │             │                           │
+│           grounded   not grounded    max retries                    │
+│              │        retries left    exceeded                      │
+│              ▼                           ▼                          │
+│             END                      ┌──────────┐                   │
+│                                      │ fallback │──► END            │
+│                                      └──────────┘                   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+**Why each component exists:**
+
+| Component | Why |
+|-----------|-----|
+| Multi-query generation | A single query may miss relevant docs due to vocabulary mismatch — 5 variants improve recall |
+| Hybrid search (dense + sparse) | Dense embeddings excel at semantic similarity; BM25 catches exact keywords, names, acronyms |
+| Reciprocal Rank Fusion | Merges ranked results from multiple query variants without requiring score normalization |
+| LangGraph agent | Enables stateful retry loop — grade → rewrite → retrieve again if answer is not grounded |
+| Answer grading | Guards against hallucinations before returning a response to the user |
 
 ## Prerequisites
 
@@ -162,6 +219,15 @@ docker compose exec app python -m eval.evaluate
 ```
 
 Results are printed to stdout and saved to `eval/results.json`.
+
+**Latest results** (13-question test set, `gpt-4o-mini`, `text-embedding-3-small`):
+
+| Metric            | Score |
+|-------------------|-------|
+| Answer Relevancy  | 0.92  |
+| Faithfulness      | 0.95  |
+| Context Precision | 0.95  |
+| Context Recall    | 0.97  |
 
 **Interpreting scores** (all metrics are 0–1):
 - `≥ 0.8` — good

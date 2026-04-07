@@ -34,7 +34,8 @@ def run_pipeline(agent, question: str) -> dict:
             "rewritten_question": "",
             "retry_count": 0,
             "max_retries": 1,
-        }
+        },
+        config={"configurable": {"thread_id": question[:40]}},
     )
 
     answer = result["answer"]

@@ -1,5 +1,7 @@
 import os
 
+APP_PASSWORD = os.getenv("APP_PASSWORD")  # If set, enables login gate
+
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # "dev" → colored human-readable console output (local development)
 # "json" → JSON lines to stdout (production / log aggregators)

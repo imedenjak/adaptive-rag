@@ -9,8 +9,10 @@ import streamlit as st
 import structlog
 from dotenv import load_dotenv
 
+from app.chat_history import load_history, save_message
 from app.logging_config import configure_logging
 from app.agent import build_graph
+from app.config import APP_PASSWORD
 
 load_dotenv()
 configure_logging()
@@ -18,6 +20,22 @@ configure_logging()
 logger = structlog.get_logger(__name__)
 
 st.title("RAG Agent 🤖")
+
+# --- Authentication ---
+if APP_PASSWORD:
+    if not st.session_state.get("authenticated"):
+        with st.form("login_form"):
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("Login")
+        if submitted:
+            if password == APP_PASSWORD:
+                st.session_state.authenticated = True
+                logger.info("auth.success")
+                st.rerun()
+            else:
+                logger.warning("auth.failure")
+                st.error("Incorrect password.")
+        st.stop()
 
 
 # Build agent once — cached so it doesn't rebuild on every interaction
@@ -30,7 +48,6 @@ def get_agent():
 agent = get_agent()
 
 # Chat history
-from app.chat_history import load_history, save_message
 
 if "messages" not in st.session_state:
     st.session_state.messages = load_history()
@@ -73,7 +90,7 @@ if question := st.chat_input("Ask a question..."):
                     "max_retries": 1,
                     "chat_history": chat_history,
                 },
-                config={"configurable":{"thread_id": st.session_state.thread_id}}
+                config={"configurable": {"thread_id": st.session_state.thread_id}},
             )
 
             elapsed_ms = round((time.perf_counter() - t0) * 1000)

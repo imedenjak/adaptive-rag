@@ -7,6 +7,8 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # "json" → JSON lines to stdout (production / log aggregators)
 LOG_FORMAT = os.getenv("LOG_FORMAT", "dev")
 
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://rag:rag@localhost:5432/chat")
+
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME", "rag_docs")
 

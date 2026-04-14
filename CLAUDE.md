@@ -34,7 +34,7 @@ docker compose exec app python -m eval.evaluate   # RAGAS quality metrics → ev
 
 ```bash
 python app/check.py                                                        # Verify Qdrant collection config
-docker compose exec app sqlite3 /data/chat_history.db "SELECT * FROM messages;"
+docker compose exec postgres psql -U rag -d chat -c "SELECT * FROM messages;"
 docker compose logs -f app
 langgraph dev                                                               # LangGraph Studio (requires uv add langgraph-cli)
 ```
@@ -70,8 +70,8 @@ Multi-query generation is done by the LLM rewriting the user's question into 5 v
 | [app/rag.py](app/rag.py) | Retrieval: multi-query generation, hybrid search, RRF fusion |
 | [app/config.py](app/config.py) | All environment variable loading (single source of truth) |
 | [app/ingest.py](app/ingest.py) | Web document loading, chunking, and indexing into Qdrant |
-| [app/streamlit_app.py](app/streamlit_app.py) | Chat UI with session state, source display, SQLite history |
-| [app/chat_history.py](app/chat_history.py) | SQLite-backed persistent chat history |
+| [app/streamlit_app.py](app/streamlit_app.py) | Chat UI with session state, source display, PostgreSQL history |
+| [app/chat_history.py](app/chat_history.py) | PostgreSQL-backed persistent chat history |
 | [eval/evaluate.py](eval/evaluate.py) | RAGAS evaluation over [eval/testset.json](eval/testset.json) |
 
 ### Configuration
@@ -86,13 +86,14 @@ All runtime config comes from environment variables (`.env`). Key variables:
 | `FAST_EMBED_SPARSE` | `Qdrant/bm25` | Sparse keyword embeddings |
 | `QDRANT_URL` | `http://localhost:6333` | Vector DB |
 | `QDRANT_COLLECTION_NAME` | `rag_docs` | Collection |
+| `DATABASE_URL` | `postgresql://rag:rag@localhost:5432/chat` | PostgreSQL connection string |
 | `LOG_FORMAT` | `dev` | `dev` (colored) or `json` (production) |
 
 ### Infrastructure
 
 - **Qdrant**: vector DB for hybrid search — runs via Docker Compose
-- **SQLite**: chat history — persisted in Docker named volume (`chat_data`)
-- **Docker Compose**: defines `qdrant` + `app` services with the `chat_data` volume
+- **PostgreSQL**: chat history — runs via Docker Compose, persisted in `postgres_data` named volume
+- **Docker Compose**: defines `qdrant`, `postgres`, and `app` services
 - **uv**: package manager — use `uv sync` and `uv add` instead of pip
 
 ## Development Notes

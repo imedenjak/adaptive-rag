@@ -22,7 +22,7 @@ adaptive_rag/
 ├── app/
 │   ├── __init__.py         # makes app a Python package
 │   ├── agent.py            # LangGraph agent — retrieve, generate, grade, retry
-│   ├── chat_history.py     # SQLite-backed persistent chat history
+│   ├── chat_history.py     # PostgreSQL-backed persistent chat history
 │   ├── config.py           # env-based configuration
 │   ├── check.py            # verify Qdrant collection vector config
 │   ├── ingest.py           # build Qdrant index (run once)
@@ -198,6 +198,7 @@ Open: `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024`
 | `LANGCHAIN_TRACING_V2`       | No       | `false`                  | Enable LangSmith tracing                             |
 | `LANGCHAIN_API_KEY`          | No       | —                        | LangSmith API key                                    |
 | `LANGCHAIN_PROJECT`          | No       | —                        | LangSmith project name                               |
+| `DATABASE_URL`               | No       | `postgresql://rag:rag@localhost:5432/chat` | PostgreSQL connection string for chat history |
 | `APP_PASSWORD`               | No       | —                        | Password gate for the Streamlit UI (unset = no auth) |
 
 ## RAGAS Evaluation
@@ -247,10 +248,10 @@ When set, users must enter the password before accessing the chat interface. Lea
 
 ## Persistent Chat History
 
-Chat history is stored in a SQLite database inside a named Docker volume (`chat_data`), so it survives container restarts. To inspect it:
+Chat history is stored in a PostgreSQL database running as a Docker service (`postgres`), persisted in the `postgres_data` named volume so it survives container restarts. To inspect it:
 
 ```bash
-docker compose exec app sqlite3 /data/chat_history.db "SELECT * FROM messages;"
+docker compose exec postgres psql -U rag -d chat -c "SELECT * FROM messages;"
 ```
 
 ## Notes
@@ -259,4 +260,4 @@ docker compose exec app sqlite3 /data/chat_history.db "SELECT * FROM messages;"
 - Switching embedding models requires deleting the Qdrant collection first — vector dimensions must match.
 - Run `python app/check.py` to verify the Qdrant collection has both dense and sparse vectors configured correctly.
 - `@st.cache_resource` ensures the agent graph is built once per Streamlit session.
-- Use `docker compose down -v` to also remove the chat history volume.
+- Use `docker compose down -v` to also remove the `postgres_data` volume (deletes all chat history).

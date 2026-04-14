@@ -19,6 +19,7 @@ dependencies = [
     "ragas",
     "langgraph-cli[inmem]>=0.4.19",
     "fastembed>=0.8.0",
+    "psycopg2-binary>=2.9.11",
 ]
 
 [tool.setuptools.packages.find]

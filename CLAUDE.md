@@ -94,3 +94,8 @@ All runtime config comes from environment variables (`.env`). Key variables:
 - **SQLite**: chat history — persisted in Docker named volume (`chat_data`)
 - **Docker Compose**: defines `qdrant` + `app` services with the `chat_data` volume
 - **uv**: package manager — use `uv sync` and `uv add` instead of pip
+
+## Development Notes
+
+- **Keep `README.md` in sync**: update `README.md` whenever you make changes that affect setup, configuration, architecture, or usage — this includes new env variables, changed commands, new features, or modified workflows.
+

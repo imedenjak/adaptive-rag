@@ -185,19 +185,20 @@ Open: `https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024`
 
 ## Environment Variables
 
-| Variable                     | Required | Default                  | Description                                      |
-|------------------------------|----------|--------------------------|--------------------------------------------------|
-| `OPENAI_API_KEY`             | Yes      | —                        | OpenAI API key                                   |
-| `OPENAI_CHAT_MODEL`          | No       | `gpt-4o-mini`            | Model for generation, grading, and rewriting     |
-| `OPENAI_QUERY_MODEL`         | No       | same as chat model       | Model for generating query variants              |
-| `OPENAI_EMBEDDING_MODEL`     | No       | `text-embedding-3-small` | Embedding model                                  |
-| `OPENAI_EMBEDDING_DIMENSIONS`| No       | auto-detected            | Override vector size for custom embedding models |
-| `FAST_EMBED_SPARSE`          | No       | `Qdrant/bm25`            | FastEmbed sparse model for keyword matching      |
-| `QDRANT_URL`                 | No       | `http://localhost:6333`  | Qdrant server URL                                |
-| `QDRANT_COLLECTION_NAME`     | No       | `rag_docs`               | Qdrant collection name                           |
-| `LANGCHAIN_TRACING_V2`       | No       | `false`                  | Enable LangSmith tracing                         |
-| `LANGCHAIN_API_KEY`          | No       | —                        | LangSmith API key                                |
-| `LANGCHAIN_PROJECT`          | No       | —                        | LangSmith project name                           |
+| Variable                     | Required | Default                  | Description                                          |
+|------------------------------|----------|--------------------------|------------------------------------------------------|
+| `OPENAI_API_KEY`             | Yes      | —                        | OpenAI API key                                       |
+| `OPENAI_CHAT_MODEL`          | No       | `gpt-4o-mini`            | Model for generation, grading, and rewriting         |
+| `OPENAI_QUERY_MODEL`         | No       | same as chat model       | Model for generating query variants                  |
+| `OPENAI_EMBEDDING_MODEL`     | No       | `text-embedding-3-small` | Embedding model                                      |
+| `OPENAI_EMBEDDING_DIMENSIONS`| No       | auto-detected            | Override vector size for custom embedding models     |
+| `FAST_EMBED_SPARSE`          | No       | `Qdrant/bm25`            | FastEmbed sparse model for keyword matching          |
+| `QDRANT_URL`                 | No       | `http://localhost:6333`  | Qdrant server URL                                    |
+| `QDRANT_COLLECTION_NAME`     | No       | `rag_docs`               | Qdrant collection name                               |
+| `LANGCHAIN_TRACING_V2`       | No       | `false`                  | Enable LangSmith tracing                             |
+| `LANGCHAIN_API_KEY`          | No       | —                        | LangSmith API key                                    |
+| `LANGCHAIN_PROJECT`          | No       | —                        | LangSmith project name                               |
+| `APP_PASSWORD`               | No       | —                        | Password gate for the Streamlit UI (unset = no auth) |
 
 ## RAGAS Evaluation
 
@@ -205,12 +206,12 @@ The `eval/` folder contains a small test set and an evaluation script that measu
 
 **Metrics:**
 
-| Metric | What it measures |
-|---|---|
-| **Answer Relevancy** | Is the answer about the question asked? |
-| **Faithfulness** | Is every claim in the answer supported by retrieved chunks? |
-| **Context Precision** | Are the retrieved chunks relevant to the question? |
-| **Context Recall** | Does the retrieved context cover the reference answer? |
+| Metric                    | What it measures                                              |
+|---------------------------|---------------------------------------------------------------|
+| **Answer Relevancy**      | Is the answer about the question asked?                       |
+| **Faithfulness**          | Is every claim in the answer supported by retrieved chunks?   |
+| **Context Precision**     | Are the retrieved chunks relevant to the question?            |
+| **Context Recall**        | Does the retrieved context cover the reference answer?        |
 
 **Run evaluation:**
 
@@ -233,6 +234,16 @@ Results are printed to stdout and saved to `eval/results.json`.
 - `≥ 0.8` — good
 - `0.5–0.8` — room for improvement
 - `< 0.5` — investigate retrieval or generation quality
+
+## Authentication
+
+The Streamlit UI supports optional password protection. Set `APP_PASSWORD` in your `.env` to enable it:
+
+```env
+APP_PASSWORD=changeme
+```
+
+When set, users must enter the password before accessing the chat interface. Leave the variable unset (or commented out) to disable the password gate entirely.
 
 ## Persistent Chat History
 

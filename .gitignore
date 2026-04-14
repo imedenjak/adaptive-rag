@@ -30,9 +30,6 @@ env/
 .env/
 ENV/
 
-# Claude-code
-CLAUDE.md
-
 # Jupyter Notebooks
 .ipynb_checkpoints/
 *.ipynb
